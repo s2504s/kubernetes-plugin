@@ -109,7 +109,19 @@ public class KubernetesLauncher extends JNLPLauncher {
 
         final PodTemplate template = slave.getTemplate();
         try {
+
+            // Если хочешь что-то сделать хорошо, сделай это сам!
+            // Никогда не проси помощи в русскоязычных чатиках. Тебе не помогут!
+            //
+            // tcpdump только лишь подтвердил мои догадки о том, что тормоза с созданием пода
+            // лежат где-то на стороне плагина, но  никак не кубернетис кластера
+            // Но мне нужны не догадки, а решенная проблема
+            // Быстро пробежавшись по коду находим часть которая отвечает за
+            // подключения к кластеру и создание пода
+            // Обарачиваем ее парой отладочных принтов (Before И After)
+            LOGGER.log(INFO, "Before connection to k8s cluster...");
             KubernetesClient client = slave.getKubernetesCloud().connect();
+            LOGGER.log(INFO, "...After connection");
             Pod pod = template.build(slave);
             slave.assignPod(pod);
 
@@ -123,6 +135,12 @@ public class KubernetesLauncher extends JNLPLauncher {
 
             LOGGER.log(Level.FINE, "Creating Pod: {0}/{1}", new Object[] { namespace, podName });
             pod = client.pods().inNamespace(namespace).create(pod);
+
+            // Все. После этого под создан
+            LOGGER.log(INFO, "...After connection");
+            // Это позволит понять сколько времени нужно было кластеру для создания пода.
+            // Логгер напечатает время, так что сравним его с таймстемпом в джобе и с таймстемпом событий в кубере
+
             LOGGER.log(INFO, "Created Pod: {0}/{1}", new Object[] { namespace, podName });
             listener.getLogger().printf("Created Pod: %s/%s%n", namespace, podName);
 
